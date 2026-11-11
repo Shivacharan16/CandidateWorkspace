@@ -1,0 +1,11 @@
+{
+  "name": "cdc-pipeline-dashboard",
+  "version": "1.0.0",
+  "description": "Frontend Dashboard for CDC Ingestion and Auditable History Pipeline",
+  "scripts": {
+    "start": "python -m http.server 3000 --directory ."
+  },
+  "keywords": ["cdc", "data-engineering", "dashboard", "scd2"],
+  "author": "Data Engineering Team",
+  "license": "MIT"
+}

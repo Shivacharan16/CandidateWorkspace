@@ -1,0 +1,79 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "1. Start Dashboard & Backend Server",
+      "type": "shell",
+      "command": "python",
+      "args": ["scripts/start_server.py"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "2. Run All Automated Tests (pytest)",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "pytest", "backend/tests", "-v"],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "3. Run Batch Ingestion (Starter Sample)",
+      "type": "shell",
+      "command": "python",
+      "args": ["scripts/run_pipeline.py"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "4. Run Reconciliation Audit Report",
+      "type": "shell",
+      "command": "python",
+      "args": ["scripts/run_reconciliation.py"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "5. Run Performance Benchmark (10k Records)",
+      "type": "shell",
+      "command": "python",
+      "args": ["scripts/run_benchmark.py", "--count", "10000"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "6. Run End-to-End Demonstration",
+      "type": "shell",
+      "command": "cmd.exe",
+      "args": ["/c", "run_all.bat"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

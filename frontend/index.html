@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDC Ingestion & Auditable History Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-icon"><i class="fa-solid fa-database"></i></div>
+      <div>
+        <h1 class="logo-title">CDC Pipeline & Audit Platform</h1>
+        <p class="logo-subtitle">Real-time Change Data Capture, SCD Type 2 History & Data Quality</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="recon-badge" class="badge badge-success"><i class="fa-solid fa-shield-check"></i> Invariants: Balanced</span>
+      <button id="btn-refresh-all" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+    </div>
+  </header>
+
+  <!-- Metric KPI Cards Bar -->
+  <section class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon icon-blue"><i class="fa-solid fa-bolt"></i></div>
+      <div class="kpi-content">
+        <span class="kpi-label">Processed Events</span>
+        <span id="kpi-processed" class="kpi-value">-</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon icon-green"><i class="fa-solid fa-users"></i></div>
+      <div class="kpi-content">
+        <span class="kpi-label">Active Customers</span>
+        <span id="kpi-customers" class="kpi-value">-</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon icon-purple"><i class="fa-solid fa-cart-shopping"></i></div>
+      <div class="kpi-content">
+        <span class="kpi-label">Active Orders</span>
+        <span id="kpi-orders" class="kpi-value">-</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon icon-teal"><i class="fa-solid fa-clock-rotate-left"></i></div>
+      <div class="kpi-content">
+        <span class="kpi-label">SCD2 History Rows</span>
+        <span id="kpi-history" class="kpi-value">-</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon icon-orange"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="kpi-content">
+        <span class="kpi-label">Quarantined (DLQ)</span>
+        <span id="kpi-quarantine" class="kpi-value">-</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon icon-indigo"><i class="fa-solid fa-list-check"></i></div>
+      <div class="kpi-content">
+        <span class="kpi-label">Pipeline Runs</span>
+        <span id="kpi-runs" class="kpi-value">-</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation Tabs -->
+  <nav class="nav-tabs">
+    <button class="tab-btn active" data-tab="tab-control"><i class="fa-solid fa-sliders"></i> Pipeline Operations</button>
+    <button class="tab-btn" data-tab="tab-customers"><i class="fa-solid fa-user-group"></i> Current State</button>
+    <button class="tab-btn" data-tab="tab-history"><i class="fa-solid fa-timeline"></i> SCD2 Audit History</button>
+    <button class="tab-btn" data-tab="tab-quarantine"><i class="fa-solid fa-shield-virus"></i> Dead-Letter Queue (DLQ)</button>
+    <button class="tab-btn" data-tab="tab-reconciliation"><i class="fa-solid fa-scale-balanced"></i> Reconciliation & Quality</button>
+    <button class="tab-btn" data-tab="tab-architecture"><i class="fa-solid fa-diagram-project"></i> Architecture & Dictionary</button>
+  </nav>
+
+  <!-- Main Content Areas -->
+  <main class="main-container">
+
+    <!-- TAB 1: PIPELINE OPERATIONS -->
+    <div id="tab-control" class="tab-pane active">
+      <div class="grid-2col">
+        <!-- Quick Actions Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-play"></i> Ingestion Controls</h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted">Trigger predefined datasets or simulate high-volume scalable loads.</p>
+            
+            <div class="action-block">
+              <label>1. Reproducible Starter Sample (with edge cases & errors)</label>
+              <div class="btn-group">
+                <button id="btn-run-starter" class="btn btn-primary"><i class="fa-solid fa-flask"></i> Generate & Ingest Starter Sample</button>
+              </div>
+            </div>
+
+            <div class="action-block">
+              <label>2. Scalable Dataset Generator</label>
+              <div class="input-inline">
+                <select id="select-volume" class="form-control">
+                  <option value="500">500 events (quick review)</option>
+                  <option value="2000" selected>2,000 events (demo batch)</option>
+                  <option value="10000">10,000 events (performance benchmark)</option>
+                  <option value="100000">100,000 events (stress test)</option>
+                </select>
+                <input type="number" id="input-seed" class="form-control" value="42" placeholder="Random Seed">
+                <button id="btn-run-scalable" class="btn btn-accent"><i class="fa-solid fa-forward"></i> Ingest Scalable Batch</button>
+              </div>
+            </div>
+
+            <div class="action-block">
+              <label>3. Test Idempotency (Rerun Last Starter Batch)</label>
+              <button id="btn-rerun-starter" class="btn btn-secondary"><i class="fa-solid fa-repeat"></i> Rerun Starter Batch (Verify 0 Duplicates)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Single Event CDC Simulator -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-terminal"></i> Direct CDC Event Simulator</h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted">Test individual CDC mutation payloads in real-time:</p>
+            <textarea id="cdc-event-input" class="code-textarea" rows="8">{
+  "event_id": "sim_evt_001",
+  "entity_type": "CUSTOMER",
+  "entity_id": "CUST-SIM-1",
+  "operation": "INSERT",
+  "event_timestamp": "2026-03-01T12:00:00Z",
+  "sequence_number": 1,
+  "payload": {
+    "customer_id": "CUST-SIM-1",
+    "name": "Jane Matrix",
+    "email": "jane@matrix.org",
+    "tier": "PLATINUM",
+    "credit_limit": 75000.0,
+    "status": "ACTIVE",
+    "address_city": "Chicago",
+    "address_country": "USA"
+  }
+}</textarea>
+            <div class="simulator-actions">
+              <button id="btn-send-sim-event" class="btn btn-success"><i class="fa-solid fa-paper-plane"></i> Ingest Single Event</button>
+              <span id="sim-result-msg" class="text-muted"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline Execution History Table -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-clock-rotate-left"></i> Execution Run History & Operational Metrics</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="data-table" id="table-pipeline-runs">
+              <thead>
+                <tr>
+                  <th>Run ID</th>
+                  <th>Batch Name</th>
+                  <th>Started At</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>Inserted</th>
+                  <th>Updated</th>
+                  <th>Deleted</th>
+                  <th>Duplicates</th>
+                  <th>Out-of-Order</th>
+                  <th>Quarantine</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="12" class="text-center">Loading runs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CURRENT STATE EXPLORER -->
+    <div id="tab-customers" class="tab-pane">
+      <div class="card">
+        <div class="card-header flex-between">
+          <h3><i class="fa-solid fa-users"></i> Customer Dimension (Current Authoritative State)</h3>
+          <div class="search-box">
+            <input type="text" id="cust-search" class="form-control" placeholder="Search ID, name, or email...">
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="data-table" id="table-customers-current">
+              <thead>
+                <tr>
+                  <th>Customer ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Tier</th>
+                  <th>Credit Limit</th>
+                  <th>Status</th>
+                  <th>City / Country</th>
+                  <th>Last Event Seq</th>
+                  <th>Last Event TS</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="10" class="text-center">Loading customers...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Fact Current State -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-cart-shopping"></i> Orders Fact (Current State)</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="data-table" id="table-orders-current">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer ID</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Currency</th>
+                  <th>Sequence</th>
+                  <th>Last Event TS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="7" class="text-center">Loading orders...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SCD2 AUDIT HISTORY -->
+    <div id="tab-history" class="tab-pane">
+      <div class="card">
+        <div class="card-header flex-between">
+          <h3><i class="fa-solid fa-timeline"></i> SCD Type 2 Audit Timeline</h3>
+          <div class="input-inline">
+            <input type="text" id="history-cust-id" class="form-control" value="CUST-1001" placeholder="Enter Customer ID">
+            <button id="btn-fetch-history" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> View History</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Showing immutable version history with effective validity ranges (<span class="code-span">valid_from</span> &rarr; <span class="code-span">valid_to</span>), operations, and out-of-order markers.</p>
+          <div id="timeline-container" class="timeline">
+            <!-- Timeline items rendered via JS -->
+            <p class="text-center text-muted">Click 'View History' to inspect an entity's change history.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: DEAD-LETTER QUEUE (QUARANTINE) -->
+    <div id="tab-quarantine" class="tab-pane">
+      <div class="card">
+        <div class="card-header flex-between">
+          <div>
+            <h3><i class="fa-solid fa-shield-virus"></i> Dead-Letter Queue (DLQ / Quarantine)</h3>
+            <p class="text-muted">Stores rejected, malformed, business-rule violating, or orphan events.</p>
+          </div>
+          <div>
+            <button id="btn-retry-quarantine" class="btn btn-warning"><i class="fa-solid fa-rotate-right"></i> Retry All Quarantined Events</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="data-table" id="table-quarantine">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Run ID</th>
+                  <th>Entity</th>
+                  <th>Error Code</th>
+                  <th>Error Reason</th>
+                  <th>Quarantined At</th>
+                  <th>Status</th>
+                  <th>Raw Payload</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="8" class="text-center">Loading quarantined items...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RECONCILIATION & DATA QUALITY -->
+    <div id="tab-reconciliation" class="tab-pane">
+      <div class="card">
+        <div class="card-header flex-between">
+          <h3><i class="fa-solid fa-scale-balanced"></i> Source-to-Target Reconciliation & Mathematical Proof</h3>
+          <button id="btn-refresh-recon" class="btn btn-primary btn-sm"><i class="fa-solid fa-arrows-rotate"></i> Re-Calculate Invariants</button>
+        </div>
+        <div class="card-body">
+          <div class="recon-formula-card">
+            <h4>Mathematical Balance Equation:</h4>
+            <div class="formula-box">
+              <code>Total Source Input = Inserted + Updated + Deleted + Duplicates + Out-of-Order + Quarantined</code>
+            </div>
+            <div id="recon-summary-text" class="mt-2 text-muted">Evaluating...</div>
+          </div>
+
+          <div class="invariant-grid mt-4">
+            <div class="invariant-card" id="inv-dup-pk">
+              <span class="inv-title">Duplicate Primary Keys</span>
+              <span class="inv-value" id="val-dup-pk">0</span>
+              <span class="inv-status pass"><i class="fa-solid fa-circle-check"></i> Passed (0 Expected)</span>
+            </div>
+            <div class="invariant-card" id="inv-scd2">
+              <span class="inv-title">SCD2 Multi-Active Violations</span>
+              <span class="inv-value" id="val-scd2">0</span>
+              <span class="inv-status pass"><i class="fa-solid fa-circle-check"></i> Passed (0 Expected)</span>
+            </div>
+            <div class="invariant-card" id="inv-ref">
+              <span class="inv-title">Referential Integrity Violations</span>
+              <span class="inv-value" id="val-ref">0</span>
+              <span class="inv-status pass"><i class="fa-solid fa-circle-check"></i> Passed (0 Expected)</span>
+            </div>
+          </div>
+
+          <h4 class="mt-4">Per-Batch Balance Audit</h4>
+          <div class="table-responsive mt-2">
+            <table class="data-table" id="table-recon-runs">
+              <thead>
+                <tr>
+                  <th>Run ID</th>
+                  <th>Batch</th>
+                  <th>Input Events</th>
+                  <th>Sum of Parts</th>
+                  <th>Deltas</th>
+                  <th>Reconciliation Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="6" class="text-center">Loading audit...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: ARCHITECTURE & DATA DICTIONARY -->
+    <div id="tab-architecture" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-diagram-project"></i> Pipeline Architecture & Flow</h3>
+        </div>
+        <div class="card-body">
+          <div class="architecture-diagram">
+            <div class="arch-step">
+              <div class="step-num">1</div>
+              <h4>Ingestion Layer</h4>
+              <p>Receives CDC JSON stream or batch files. Computes SHA-256 fingerprint hash.</p>
+            </div>
+            <div class="arch-arrow">&rarr;</div>
+            <div class="arch-step">
+              <div class="step-num">2</div>
+              <h4>Validation & Gatekeeper</h4>
+              <p>Validates envelope schema, business rules & referential integrity. Routes failures to DLQ.</p>
+            </div>
+            <div class="arch-arrow">&rarr;</div>
+            <div class="arch-step">
+              <div class="step-num">3</div>
+              <h4>Deduplication & Sequencing</h4>
+              <p>Filters duplicate event IDs. Compares sequence numbers & timestamps for out-of-order mutations.</p>
+            </div>
+            <div class="arch-arrow">&rarr;</div>
+            <div class="arch-step">
+              <div class="step-num">4</div>
+              <h4>Dual-Table Publishing</h4>
+              <p>Upserts authoritative Current-State table & appends to immutable SCD Type 2 History.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-4">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-book"></i> Data Dictionary & Schema Conventions</h3>
+        </div>
+        <div class="card-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Table Name</th>
+                <th>Grain</th>
+                <th>Primary Key</th>
+                <th>Key Foreign Keys</th>
+                <th>Key Business Rules</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>dim_customers_current</code></td>
+                <td>1 row per customer</td>
+                <td><code>customer_id</code></td>
+                <td>None</td>
+                <td>Latest active state. Monotonic sequence protection. Soft-delete flag.</td>
+              </tr>
+              <tr>
+                <td><code>dim_customers_history</code></td>
+                <td>1 row per change version</td>
+                <td><code>history_id</code></td>
+                <td><code>pipeline_run_id</code></td>
+                <td>SCD Type 2. Exact 1 active record (<code>is_current = 1</code>). Preserves out-of-order changes.</td>
+              </tr>
+              <tr>
+                <td><code>fct_orders_current</code></td>
+                <td>1 row per order</td>
+                <td><code>order_id</code></td>
+                <td><code>customer_id</code></td>
+                <td>Referential integrity enforced: customer must exist and be active.</td>
+              </tr>
+              <tr>
+                <td><code>quarantine_records</code></td>
+                <td>1 row per rejected event</td>
+                <td><code>quarantine_id</code></td>
+                <td><code>pipeline_run_id</code></td>
+                <td>Stores raw payload, error code, failure reason. Supports replay/retry.</td>
+              </tr>
+              <tr>
+                <td><code>processed_events</code></td>
+                <td>1 row per ingested event</td>
+                <td><code>event_id</code></td>
+                <td><code>pipeline_run_id</code></td>
+                <td>Idempotency ledger. Prevents duplicate event replay.</td>
+              </tr>
+              <tr>
+                <td><code>pipeline_runs</code></td>
+                <td>1 row per execution batch</td>
+                <td><code>run_id</code></td>
+                <td>None</td>
+                <td>Observability ledger: start/end timestamps, duration, counts, status.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
