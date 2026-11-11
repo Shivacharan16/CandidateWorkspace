@@ -262,3 +262,7 @@ The automated test suite in `backend/tests/` covers all required positive and ne
 3. **Quarantine Lifecycle**:
    - Quarantined records can be retried in-place via API. For production at enterprise scale, a dedicated quarantine dead-letter topic with automated schema-drift detection is recommended.
 "# CandidateWorkspace" 
+
+
+
+one of the main point in this github i have not uploaded on file due to its database size is large and i.e is  "cdc_pipeline.db" to refer this file or project folder it is in link it will be avalable alter here
