@@ -265,4 +265,4 @@ The automated test suite in `backend/tests/` covers all required positive and ne
 
 
 
-one of the main point in this github i have not uploaded on file due to its database size is large and i.e is  "cdc_pipeline.db" to refer this file or project folder it is in link it will be avalable alter here
+one of the main point in this git hub  about project file i have not uploaded one file because of file size is large and due to its database size is large and i.e is  "cdc_pipeline.db" to refer this file or project folder it is in link it will be avalable alter here
